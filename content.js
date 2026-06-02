@@ -10,6 +10,7 @@
   // ============ 配置 ============
   const CONFIG = {
     petSize: 80,
+    moveMode: 'freeRoam',  // 'freeRoam' | 'horizontal' | 'stationary'
     walkSpeed: 3,          // px per frame
     walkFrameInterval: 30, // ms between animation frames
     typingStopDelay: 800,  // ms after last keystroke to stop walking
@@ -34,7 +35,8 @@
   const state = {
     isWalking: false,
     isTyping: false,
-    directionAngle: Math.random() * Math.PI * 2, // 移动方向角度（弧度）
+    direction: 1,           // 水平模式用：1=右, -1=左
+    directionAngle: Math.random() * Math.PI * 2, // 漫游模式用：移动方向角度（弧度）
     positionX: 0,
     positionY: 0,
     currentIdleAnim: 'sway',
@@ -218,6 +220,16 @@
   // ============ 行走动画 ============
   function startWalking() {
     if (state.isWalking) return;
+
+    // 原地待机模式不移动
+    if (CONFIG.moveMode === 'stationary') {
+      state.isWalking = true;
+      state.element.classList.add('walking');
+      state.element.classList.remove('idle');
+      startIdleAnimation();
+      return;
+    }
+
     state.isWalking = true;
     state.element.classList.add('walking');
     state.element.classList.remove('idle');
@@ -232,40 +244,51 @@
       const dt = now - lastTime;
       lastTime = now;
 
-      // 偶尔随机偏转方向（±30°）
-      if (now - state.lastDirectionChange > state.directionChangeInterval) {
-        state.directionAngle += (Math.random() - 0.5) * (Math.PI / 3);
-        state.lastDirectionChange = now;
-        state.directionChangeInterval = 2000 + Math.random() * 2000;
+      if (CONFIG.moveMode === 'freeRoam') {
+        // 自由漫游：角度移动 + 随机偏转
+        if (now - state.lastDirectionChange > state.directionChangeInterval) {
+          state.directionAngle += (Math.random() - 0.5) * (Math.PI / 3);
+          state.lastDirectionChange = now;
+          state.directionChangeInterval = 2000 + Math.random() * 2000;
+        }
+
+        const dx = Math.cos(state.directionAngle) * CONFIG.walkSpeed;
+        const dy = Math.sin(state.directionAngle) * CONFIG.walkSpeed;
+        state.positionX += dx;
+        state.positionY += dy;
+
+        // X 轴边界反弹
+        if (state.positionX >= state.walkRange.maxX) {
+          state.positionX = state.walkRange.maxX;
+          state.directionAngle = Math.PI - state.directionAngle;
+        } else if (state.positionX <= state.walkRange.minX) {
+          state.positionX = state.walkRange.minX;
+          state.directionAngle = Math.PI - state.directionAngle;
+        }
+        // Y 轴边界反弹
+        if (state.positionY >= state.walkRange.maxY) {
+          state.positionY = state.walkRange.maxY;
+          state.directionAngle = -state.directionAngle;
+        } else if (state.positionY <= state.walkRange.minY) {
+          state.positionY = state.walkRange.minY;
+          state.directionAngle = -state.directionAngle;
+        }
+
+        flipDirection(dx >= 0 ? 1 : -1);
+      } else if (CONFIG.moveMode === 'horizontal') {
+        // 水平移动：左右行走，碰壁反弹
+        state.positionX += CONFIG.walkSpeed * state.direction;
+
+        if (state.positionX >= state.walkRange.maxX) {
+          state.positionX = state.walkRange.maxX;
+          state.direction = -1;
+        } else if (state.positionX <= state.walkRange.minX) {
+          state.positionX = state.walkRange.minX;
+          state.direction = 1;
+        }
+
+        flipDirection(state.direction);
       }
-
-      // 根据角度计算位移
-      const dx = Math.cos(state.directionAngle) * CONFIG.walkSpeed;
-      const dy = Math.sin(state.directionAngle) * CONFIG.walkSpeed;
-
-      state.positionX += dx;
-      state.positionY += dy;
-
-      // X 轴边界反弹
-      if (state.positionX >= state.walkRange.maxX) {
-        state.positionX = state.walkRange.maxX;
-        state.directionAngle = Math.PI - state.directionAngle;
-      } else if (state.positionX <= state.walkRange.minX) {
-        state.positionX = state.walkRange.minX;
-        state.directionAngle = Math.PI - state.directionAngle;
-      }
-
-      // Y 轴边界反弹
-      if (state.positionY >= state.walkRange.maxY) {
-        state.positionY = state.walkRange.maxY;
-        state.directionAngle = -state.directionAngle;
-      } else if (state.positionY <= state.walkRange.minY) {
-        state.positionY = state.walkRange.minY;
-        state.directionAngle = -state.directionAngle;
-      }
-
-      // 翻转角色朝向（根据水平分量）
-      flipDirection(dx >= 0 ? 1 : -1);
 
       // 应用位置
       applyPosition();
@@ -551,10 +574,61 @@
     }
   }
 
+  // ============ 设置加载 ============
+  async function loadSettings() {
+    try {
+      const data = await chrome.storage.local.get({
+        moveMode: CONFIG.moveMode,
+        speed: CONFIG.walkSpeed,
+        delay: CONFIG.typingStopDelay,
+        size: CONFIG.petSize,
+      });
+      CONFIG.moveMode = data.moveMode;
+      CONFIG.walkSpeed = data.speed;
+      CONFIG.typingStopDelay = data.delay;
+      CONFIG.petSize = data.size;
+      console.log('[CAPYLULU] 设置已加载:', data);
+    } catch (err) {
+      console.warn('[CAPYLULU] 加载设置失败，使用默认值:', err);
+    }
+  }
+
+  function applySettings(settings) {
+    if (settings.moveMode !== undefined) CONFIG.moveMode = settings.moveMode;
+    if (settings.speed !== undefined) CONFIG.walkSpeed = settings.speed;
+    if (settings.delay !== undefined) CONFIG.typingStopDelay = settings.delay;
+    if (settings.size !== undefined) CONFIG.petSize = settings.size;
+  }
+
+  // 监听设置更新消息
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'CAPYLULU_UPDATE_SETTINGS') {
+      applySettings(message.settings);
+
+      // 如果正在行走且切换了移动模式，重启行走动画
+      if (state.isWalking) {
+        stopWalking();
+        startWalking();
+      }
+
+      sendResponse({ status: 'ok' });
+    }
+    if (message.type === 'CAPYLULU_TOGGLE') {
+      if (state.isWalking) {
+        stopWalking();
+      } else if (state.isTyping) {
+        startWalking();
+      }
+      sendResponse({ status: 'ok' });
+    }
+  });
+
   // ============ 初始化 ============
-  function init() {
+  async function init() {
     // 避免重复注入
     if (document.getElementById('capylulu-pet-container')) return;
+
+    await loadSettings();
 
     createPetElement();
     setupTypingDetection();
@@ -569,7 +643,7 @@
 
   // DOM 加载完成后初始化
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', () => init());
   } else {
     init();
   }

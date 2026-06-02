@@ -5,6 +5,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   // ============ DOM 元素引用 ============
   const elWalkOnType = document.getElementById('optWalkOnType');
+  const elMoveMode = document.getElementById('optMoveMode');
   const elSpeed = document.getElementById('optSpeed');
   const elSpeedValue = document.getElementById('speedValue');
   const elDelay = document.getElementById('optDelay');
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============ 默认设置 ============
   const DEFAULTS = {
     walkOnType: true,
+    moveMode: 'freeRoam',
     speed: 3,
     delay: 800,
     size: 80,
@@ -68,12 +70,14 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const data = await chrome.storage.local.get({
         walkOnType: DEFAULTS.walkOnType,
+        moveMode: DEFAULTS.moveMode,
         speed: DEFAULTS.speed,
         delay: DEFAULTS.delay,
         size: DEFAULTS.size,
       });
 
       elWalkOnType.checked = data.walkOnType;
+      elMoveMode.value = data.moveMode;
       elSpeed.value = data.speed;
       elSpeedValue.textContent = data.speed;
       elDelay.value = data.delay;
@@ -90,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function saveSettings() {
     const settings = {
       walkOnType: elWalkOnType.checked,
+      moveMode: elMoveMode.value,
       speed: parseInt(elSpeed.value, 10),
       delay: parseInt(elDelay.value, 10),
       size: parseInt(elSize.value, 10),
@@ -122,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============ 重置设置 ============
   async function resetSettings() {
     elWalkOnType.checked = DEFAULTS.walkOnType;
+    elMoveMode.value = DEFAULTS.moveMode;
     elSpeed.value = DEFAULTS.speed;
     elSpeedValue.textContent = DEFAULTS.speed;
     elDelay.value = DEFAULTS.delay;
