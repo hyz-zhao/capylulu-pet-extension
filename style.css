@@ -1,0 +1,302 @@
+/**
+ * CAPYLULU 桌宠 - 样式与动画
+ */
+
+/* ============ 容器 ============ */
+#capylulu-pet-container {
+  position: fixed;
+  z-index: 2147483647; /* 最高层级 */
+  width: 80px;
+  height: 100px;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: none;
+}
+
+/* ============ 桌宠主体 ============ */
+#capylulu-pet {
+  position: relative;
+  width: 80px;
+  height: 90px;
+  cursor: grab;
+  transform-origin: center bottom;
+  transition: transform 0.15s ease;
+}
+
+#capylulu-pet:active {
+  cursor: grabbing;
+}
+
+#capylulu-pet-inner {
+  width: 80px;
+  height: 90px;
+  position: relative;
+  overflow: visible;
+}
+
+#capylulu-pet-inner svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+
+/* ============ 行走状态 ============ */
+#capylulu-pet.walking #capylulu-pet-inner svg {
+  animation: petWalkBounce 0.18s ease-in-out infinite alternate;
+}
+
+#capylulu-pet.walking .pet-left-arm {
+  transform-origin: 12px 55px;
+  animation: armSwingLeft 0.18s ease-in-out infinite alternate;
+}
+
+#capylulu-pet.walking .pet-right-arm {
+  transform-origin: 88px 55px;
+  animation: armSwingRight 0.18s ease-in-out infinite alternate;
+}
+
+#capylulu-pet.walking .pet-left-leg {
+  transform-origin: 35px 85px;
+  animation: legSwingLeft 0.18s ease-in-out infinite alternate;
+}
+
+#capylulu-pet.walking .pet-right-leg {
+  transform-origin: 65px 85px;
+  animation: legSwingRight 0.18s ease-in-out infinite alternate;
+}
+
+/* ============ 待机状态 ============ */
+#capylulu-pet.idle #capylulu-pet-inner svg {
+  animation: idleFloat 2.5s ease-in-out infinite;
+}
+
+/* 待机动画变体 */
+#capylulu-pet.idle[data-idle-anim="sway"] #capylulu-pet-inner {
+  animation: idleSway 2s ease-in-out infinite;
+}
+#capylulu-pet.idle[data-idle-anim="blink"] .pet-eyes {
+  animation: blinkAnim 3s ease-in-out infinite;
+}
+#capylulu-pet.idle[data-idle-anim="float"] #capylulu-pet-inner {
+  animation: idleFloat 2.8s ease-in-out infinite;
+}
+
+/* ============ 拖拽状态 ============ */
+#capylulu-pet.dragging {
+  cursor: grabbing !important;
+  opacity: 0.9;
+  transform: scale(1.08);
+  filter: drop-shadow(0 8px 16px rgba(255, 217, 61, 0.4));
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+/* ============ 点击互动 ============ */
+#capylulu-pet.jump {
+  animation: jumpAnim 0.5s cubic-bezier(0.28, 0.84, 0.42, 1);
+}
+
+#capylulu-pet.spin {
+  animation: spinAnim 0.6s cubic-bezier(0.28, 0.84, 0.42, 1);
+}
+
+/* ============ 对话气泡 ============ */
+#capylulu-bubble {
+  position: absolute;
+  bottom: 95px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.8);
+  background: linear-gradient(135deg, #FFF9E6, #FFF3CC);
+  border: 2px solid #FFD93D;
+  border-radius: 14px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  color: #7A6020;
+  white-space: nowrap;
+  max-width: 200px;
+  text-align: center;
+  box-shadow:
+    0 4px 12px rgba(255, 217, 61, 0.35),
+    0 2px 4px rgba(0,0,0,0.08);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 10;
+}
+
+#capylulu-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: #FFD93D;
+}
+
+#capylulu-bubble.show {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+#capylulu-bubble.hidden {
+  opacity: 0;
+  transform: translateX(-50%) scale(0.7) translateY(5px);
+  pointer-events: none;
+}
+
+/* ============ 粒子效果 ============ */
+#capylulu-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.capylulu-particle {
+  position: absolute;
+  font-size: 14px;
+  animation: particleRise 1.2s ease-out forwards;
+  opacity: 0.85;
+}
+
+.capylulu-particle-burst {
+  font-size: 16px;
+  animation: particleBurst 1s ease-out forwards;
+  --bx: 0px;
+  --by: 0px;
+}
+
+/* ============ 关键帧动画 ============ */
+
+/* 行走弹跳 */
+@keyframes petWalkBounce {
+  0%   { transform: translateY(0) scaleY(1); }
+  50%  { transform: translateY(-4px) scaleY(1.03) scaleX(0.97); }
+  100% { transform: translateY(0) scaleY(1); }
+}
+
+/* 手臂摆动（行走） */
+@keyframes armSwingLeft {
+  0%   { transform: rotate(-20deg); }
+  100% { transform: rotate(20deg); }
+}
+@keyframes armSwingRight {
+  0%   { transform: rotate(20deg); }
+  100% { transform: rotate(-20deg); }
+}
+
+/* 腿部摆动（行走） */
+@keyframes legSwingLeft {
+  0%   { transform: rotate(-8deg); }
+  100% { transform: rotate(8deg); }
+}
+@keyframes legSwingRight {
+  0%   { transform: rotate(8deg); }
+  100% { transform: rotate(-8deg); }
+}
+
+/* 待机摇晃 */
+@keyframes idleSway {
+  0%, 100% { transform: rotate(-3deg) translateY(0); }
+  50%      { transform: rotate(3deg) translateY(-2px); }
+}
+
+/* 待机浮动 */
+@keyframes idleFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+
+/* 眨眼 */
+@keyframes blinkAnim {
+  0%, 45%, 55%, 100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.1);
+  }
+}
+
+/* 跳跃 */
+@keyframes jumpAnim {
+  0%   { transform: translateY(0) scale(1, 1); }
+  30%  { transform: translateY(-30px) scale(1.05, 0.95); }
+  50%  { transform: translateY(-36px) scale(0.98, 1.02); }
+  70%  { transform: translateY(-20px) scale(1.02, 0.98); }
+  85%  { transform: translateY(-5px) scale(1, 1); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+/* 旋转 */
+@keyframes spinAnim {
+  0%   { transform: rotate(0deg) scale(1); }
+  40%  { transform: rotate(180deg) scale(1.1); }
+  70%  { transform: rotate(320deg) scale(0.95); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* 粒子上升 */
+@keyframes particleRise {
+  0% {
+    opacity: 0.9;
+    transform: translateY(0) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-25px) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-45px) scale(0.3);
+  }
+}
+
+/* 粒子爆发 */
+@keyframes particleBurst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.5);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translate(var(--bx), var(--by)) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--bx) * 1.5), calc(var(--by) * 1.5)) scale(0.2);
+  }
+}
+
+/* ============ 响应式 & 安全 ============ */
+@media (max-width: 480px) {
+  #capylulu-pet-container {
+    width: 60px;
+    height: 75px;
+  }
+  #capylulu-pet {
+    width: 60px;
+    height: 68px;
+  }
+  #capylulu-pet-inner {
+    width: 60px;
+    height: 68px;
+  }
+  #capylulu-bubble {
+    font-size: 11px;
+    padding: 6px 10px;
+    max-width: 150px;
+  }
+}
+
+/* 打印时隐藏 */
+@media print {
+  #capylulu-pet-container {
+    display: none !important;
+  }
+}

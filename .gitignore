@@ -1,0 +1,24 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (if used for build)
+node_modules/
+npm-debug.log
+
+# Build output
+dist/
+*.crx
+*.pem
+*.xpi
+
+# Temp
+*.tmp
+*.bak
