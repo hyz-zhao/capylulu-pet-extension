@@ -641,8 +641,9 @@
     const vbHeight = parts[3];
     const aspectRatio = vbWidth / vbHeight;
 
-    // 基础大小为 CONFIG.petSize
+    // 基础大小为 CONFIG.petSize，最小宽度为 60px
     const baseSize = CONFIG.petSize;
+    const minWidth = 60;
     let containerWidth, containerHeight;
 
     if (aspectRatio >= 1) {
@@ -650,9 +651,9 @@
       containerWidth = baseSize;
       containerHeight = baseSize / aspectRatio;
     } else {
-      // 高度 > 宽度
+      // 高度 > 宽度，确保宽度不会太小
       containerHeight = baseSize;
-      containerWidth = baseSize * aspectRatio;
+      containerWidth = Math.max(baseSize * aspectRatio, minWidth);
     }
 
     // 应用到容器和内部元素
