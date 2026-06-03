@@ -80,6 +80,129 @@
       margin-bottom: 12px;
     }
 
+    /* 模型选择 */
+    .model-section {
+      margin-bottom: 14px;
+    }
+
+    .model-section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #7A6020;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .model-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .model-card {
+      position: relative;
+      background: white;
+      border: 2px solid #E5D590;
+      border-radius: 10px;
+      padding: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .model-card:hover {
+      border-color: #FFD93D;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+    }
+
+    .model-card.selected {
+      border-color: #FFD93D;
+      background: linear-gradient(135deg, #FFF9E6, #FFF3CC);
+      box-shadow: 0 0 0 2px rgba(255, 217, 61, 0.3);
+    }
+
+    .model-card .model-preview {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .model-card .model-preview svg {
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .model-card .model-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: #5A4A20;
+    }
+
+    .model-card .model-delete {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: all 0.2s;
+    }
+
+    .model-card:hover .model-delete {
+      display: flex;
+    }
+
+    .model-card .model-delete:hover {
+      background: #ff4444;
+      transform: scale(1.1);
+    }
+
+    .model-card-upload {
+      background: linear-gradient(135deg, #FFF9E6, #FFF3CC);
+      border: 2px dashed #E5D590;
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .model-card-upload:hover {
+      border-color: #FFD93D;
+      background: linear-gradient(135deg, #FFF3CC, #FFE8A0);
+    }
+
+    .model-card-upload .upload-icon {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .model-card-upload .upload-text {
+      font-size: 11px;
+      font-weight: 600;
+      color: #7A6020;
+    }
+
+    .model-card-upload input[type="file"] {
+      display: none;
+    }
+
     .setting-label {
       display: flex;
       align-items: center;
@@ -251,6 +374,21 @@
     <div class="welcome-banner">
       <div class="pet-preview" id="petPreview"></div>
       <p>我会在你打字时陪你走动哦！<br>点击我可以互动，拖拽可以移动位置~</p>
+    </div>
+
+    <!-- 模型选择 -->
+    <div class="model-section">
+      <div class="model-section-title">
+        <span>🎨 选择模型</span>
+      </div>
+      <div class="model-grid" id="modelGrid">
+        <!-- 模型卡片将由 JS 动态生成 -->
+      </div>
+      <div class="model-card-upload" id="uploadCard">
+        <div class="upload-icon">📁</div>
+        <div class="upload-text">上传自定义 SVG</div>
+        <input type="file" id="svgUpload" accept=".svg">
+      </div>
     </div>
 
     <!-- 设置 -->
