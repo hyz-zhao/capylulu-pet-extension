@@ -92,6 +92,10 @@
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
+#capylulu-pet-container[data-model="pixel"] #capylulu-pet.dragging {
+  filter: drop-shadow(0 8px 16px rgba(100, 180, 255, 0.5));
+}
+
 /* ============ 点击互动 ============ */
 #capylulu-pet.jump {
   animation: jumpAnim 0.5s cubic-bezier(0.28, 0.84, 0.42, 1);

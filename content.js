@@ -156,6 +156,7 @@
     // 容器
     const container = document.createElement('div');
     container.id = 'capylulu-pet-container';
+    container.dataset.model = currentModelId;
     container.innerHTML = `
       <div id="capylulu-pet">
         <div id="capylulu-pet-inner">${getCurrentModelSVG()}</div>
@@ -719,6 +720,7 @@
     }
 
     currentModelId = modelId;
+    if (state.containerEl) state.containerEl.dataset.model = modelId;
     const petInner = state.containerEl?.querySelector('#capylulu-pet-inner');
     if (petInner) {
       petInner.innerHTML = model.svg;
