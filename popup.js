@@ -185,9 +185,29 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        // 提取 viewBox
+        // 提取原始 viewBox 或 width/height
         const viewBoxMatch = svgText.match(/viewBox=["']([^"']+)["']/);
-        const viewBox = viewBoxMatch ? viewBoxMatch[1] : '0 0 100 100';
+        const widthMatch = svgText.match(/\bwidth=["']([^"']+)["']/);
+        const heightMatch = svgText.match(/\bheight=["']([^"']+)["']/);
+
+        let origViewBox;
+        if (viewBoxMatch) {
+          origViewBox = viewBoxMatch[1];
+        } else if (widthMatch && heightMatch) {
+          const w = parseFloat(widthMatch[1]);
+          const h = parseFloat(heightMatch[1]);
+          if (!isNaN(w) && !isNaN(h)) {
+            origViewBox = `0 0 ${w} ${h}`;
+          }
+        }
+        if (!origViewBox) origViewBox = '0 0 100 100';
+
+        // 提取 <svg> 内部内容（去掉外层 svg 标签）
+        const innerMatch = svgText.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
+        const innerContent = innerMatch ? innerMatch[1] : svgText;
+
+        // 包裹为统一 100x100 视口，preserveAspectRatio 自动缩放居中
+        const normalizedSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><svg viewBox="${origViewBox}" width="100" height="100" preserveAspectRatio="xMidYMid meet">${innerContent}</svg></svg>`;
 
         // 生成唯一 ID
         const customId = 'custom_' + Date.now();
@@ -198,8 +218,8 @@ document.addEventListener('DOMContentLoaded', () => {
           [`customModel_${customId}`]: {
             id: customId,
             name: customName,
-            viewBox: viewBox,
-            svg: svgText,
+            viewBox: '0 0 100 100',
+            svg: normalizedSvg,
           }
         });
 
@@ -207,7 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
         PRESET_MODELS[customId] = {
           id: customId,
           name: customName,
-          svg: svgText,
+          viewBox: '0 0 100 100',
+          svg: normalizedSvg,
         };
 
         // 切换到新模型
