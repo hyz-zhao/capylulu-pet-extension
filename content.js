@@ -754,6 +754,10 @@
       sendResponse({ status: 'ok' });
     }
     if (message.type === 'CAPYLULU_SWITCH_MODEL') {
+      // 如果本地没有该模型，先注册
+      if (message.model && !PRESET_MODELS[message.modelId]) {
+        PRESET_MODELS[message.modelId] = message.model;
+      }
       const success = switchModel(message.modelId);
       sendResponse({ status: success ? 'ok' : 'error' });
     }

@@ -146,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
           await chrome.tabs.sendMessage(tab.id, {
             type: 'CAPYLULU_SWITCH_MODEL',
             modelId: modelId,
+            model: PRESET_MODELS[modelId] || null,
           });
         } catch (e) {
           // 标签页可能没有加载 content script，忽略
