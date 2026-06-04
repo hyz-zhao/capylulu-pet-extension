@@ -114,8 +114,11 @@
   font-size: 13px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
   color: #7A6020;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-all;
   max-width: 200px;
+  min-width: 60px;
+  width: max-content;
   text-align: center;
   box-shadow:
     0 4px 12px rgba(255, 217, 61, 0.35),
@@ -145,6 +148,20 @@
   opacity: 0;
   transform: translateX(-50%) scale(0.7) translateY(5px);
   pointer-events: none;
+}
+
+/* ============ GANYU 气泡样式 ============ */
+#capylulu-bubble.bubble-ganyu {
+  background: linear-gradient(135deg, #E8F4FD, #D4E8F7);
+  border: 2px solid #89CFF0;
+  color: #2A5A7A;
+  box-shadow:
+    0 4px 12px rgba(137, 207, 240, 0.35),
+    0 2px 4px rgba(0,0,0,0.08);
+}
+
+#capylulu-bubble.bubble-ganyu::after {
+  border-top-color: #89CFF0;
 }
 
 /* ============ 粒子效果 ============ */
@@ -290,7 +307,7 @@
   #capylulu-bubble {
     font-size: 11px;
     padding: 6px 10px;
-    max-width: 150px;
+    max-width: 160px;
   }
 }
 
