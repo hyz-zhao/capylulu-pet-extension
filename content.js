@@ -10,6 +10,7 @@
   // ============ 配置 ============
   const CONFIG = {
     petSize: 80,
+    walkOnType: true,
     moveMode: 'freeRoam',  // 'freeRoam' | 'horizontal' | 'stationary'
     walkSpeed: 3,          // px per frame
     walkFrameInterval: 30, // ms between animation frames
@@ -201,10 +202,9 @@
     let typingDebounce;
 
     document.addEventListener('keydown', (e) => {
-      // 忽略纯修饰键
       if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return;
-      // 忽略输入框以外的（可选：全局检测）
       if (!isTextInput(e.target)) return;
+      if (!CONFIG.walkOnType) return;
 
       if (!state.isTyping) {
         state.isTyping = true;
@@ -221,6 +221,7 @@
     // 也监听 input 事件作为补充
     document.addEventListener('input', (e) => {
       if (!isTextInput(e.target)) return;
+      if (!CONFIG.walkOnType) return;
 
       if (!state.isTyping) {
         state.isTyping = true;
@@ -638,12 +639,14 @@
     try {
       const data = await chrome.storage.local.get({
         moveMode: CONFIG.moveMode,
+        walkOnType: CONFIG.walkOnType,
         speed: CONFIG.walkSpeed,
         delay: CONFIG.typingStopDelay,
         size: CONFIG.petSize,
         currentModelId: 'capylulu',
       });
       CONFIG.moveMode = data.moveMode;
+      CONFIG.walkOnType = data.walkOnType;
       CONFIG.walkSpeed = data.speed;
       CONFIG.typingStopDelay = data.delay;
       CONFIG.petSize = data.size;
@@ -655,6 +658,7 @@
   }
 
   function applySettings(settings) {
+    if (settings.walkOnType !== undefined) CONFIG.walkOnType = settings.walkOnType;
     if (settings.moveMode !== undefined) CONFIG.moveMode = settings.moveMode;
     if (settings.speed !== undefined) CONFIG.walkSpeed = settings.speed;
     if (settings.delay !== undefined) CONFIG.typingStopDelay = settings.delay;

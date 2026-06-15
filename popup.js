@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const innerContent = innerMatch ? innerMatch[1] : svgText;
 
         // 包裹为统一 100x100 视口，preserveAspectRatio 自动缩放居中
-        const normalizedSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><svg viewBox="${origViewBox}" width="100" height="100" preserveAspectRatio="xMidYMid meet">${innerContent}</svg></svg>`;
+        const normalizedSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">${innerContent}</svg>`;
 
         // 生成唯一 ID
         const customId = 'custom_' + Date.now();
