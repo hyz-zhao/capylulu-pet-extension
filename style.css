@@ -109,6 +109,15 @@
   animation: spinAnim 0.6s cubic-bezier(0.28, 0.84, 0.42, 1);
 }
 
+#capylulu-pet.sleep {
+  animation: sleepShake 2s ease-in-out infinite;
+  transform: rotate(90deg) scale(0.9);
+}
+
+#capylulu-pet.panicked {
+  animation: panicShake 0.15s ease-in-out infinite alternate;
+}
+
 /* ============ 对话气泡 ============ */
 #capylulu-bubble {
   position: absolute;
@@ -296,6 +305,19 @@
     opacity: 0;
     transform: translate(calc(var(--bx) * 1.5), calc(var(--by) * 1.5)) scale(0.2);
   }
+}
+
+/* 睡觉：翻滚 + 轻微晃动 */
+@keyframes sleepShake {
+  0%, 100% { transform: rotate(90deg) scale(0.9) translateX(0); }
+  25% { transform: rotate(90deg) scale(0.88) translateX(-3px); }
+  75% { transform: rotate(90deg) scale(0.88) translateX(3px); }
+}
+
+/* 恐慌：快速颤抖 */
+@keyframes panicShake {
+  0% { transform: translateX(-3px) rotate(-3deg); }
+  100% { transform: translateX(3px) rotate(3deg); }
 }
 
 /* ============ 响应式 & 安全 ============ */

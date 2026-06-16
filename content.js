@@ -21,6 +21,7 @@
     defaultPosition: { right: 20, bottom: 20 },
     idleAnimations: ['blink', 'sway', 'float'],
     idleSwitchInterval: 3000,
+    longPressThreshold: 600,
   };
 
   // ============ 状态 ============
@@ -48,6 +49,23 @@
     containerEl: null,
     frameCount: 0,
     particles: [],
+
+    // 三击检测
+    clickCount: 0,
+    clickTimer: null,
+    // 长按检测
+    longPressTimer: null,
+    longPressFired: false,
+    // 鼠标速度
+    mouseX: 0,
+    mouseY: 0,
+    lastMouseX: 0,
+    lastMouseY: 0,
+    mouseSpeed: 0,
+    isPanicked: false,
+    // 时间状态
+    timeState: 'day', // 'day' | 'evening' | 'night' | 'late'
+    timeIconTimer: null,
   };
 
   // ============ 预设模型 ============
@@ -459,6 +477,26 @@
     }
   }
 
+  function spawnStarBurst() {
+    const particleContainer = state.containerEl?.querySelector('#capylulu-particles');
+    if (!particleContainer) return;
+    const starSymbols = ['⭐', '✨', '🌟', '💫'];
+    for (let i = 0; i < 4; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'capylulu-particle capylulu-particle-burst';
+      particle.textContent = starSymbols[Math.floor(Math.random() * starSymbols.length)];
+      const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const dist = 50 + Math.random() * 20;
+      particle.style.setProperty('--bx', Math.cos(angle) * dist + 'px');
+      particle.style.setProperty('--by', Math.sin(angle) * dist + 'px');
+      particle.style.left = '40px';
+      particle.style.top = '40px';
+      particle.style.fontSize = '18px';
+      particleContainer.appendChild(particle);
+      setTimeout(() => particle.remove(), 1200);
+    }
+  }
+
   // ============ 拖拽交互 ============
   function setupDragInteraction() {
     const el = state.element;
@@ -582,25 +620,48 @@
     const el = state.element;
     if (!el) return;
 
-    let clickTimer = null;
+    el.addEventListener('mousedown', onPointerDown);
+    el.addEventListener('touchstart', onPointerDown, { passive: true });
+    el.addEventListener('mouseup', onPointerUp);
+    el.addEventListener('touchend', onPointerUp);
+    el.addEventListener('click', onClick);
+  }
 
-    el.addEventListener('click', (e) => {
-      // 区分拖拽结束时的误触
-      if (state.isDragging) return;
+  function onPointerDown(e) {
+    if (e.button !== undefined && e.button !== 0) return;
+    state.longPressFired = false;
+    state.longPressTimer = setTimeout(() => {
+      state.longPressFired = true;
+      onLongPress();
+    }, CONFIG.longPressThreshold);
+  }
 
-      // 双击检测
-      if (clickTimer) {
-        clearTimeout(clickTimer);
-        clickTimer = null;
-        onDoubleClick();
-        return;
-      }
+  function onPointerUp(e) {
+    if (state.longPressTimer) {
+      clearTimeout(state.longPressTimer);
+      state.longPressTimer = null;
+    }
+  }
 
-      clickTimer = setTimeout(() => {
-        clickTimer = null;
-        onSingleClick();
-      }, 250);
-    });
+  function onClick(e) {
+    // 长按时不触发点击
+    if (state.longPressFired) {
+      state.longPressFired = false;
+      return;
+    }
+    // 区分拖拽结束时的误触
+    if (state.isDragging) return;
+
+    state.clickCount++;
+    clearTimeout(state.clickTimer);
+    state.clickTimer = setTimeout(() => {
+      state.clickCount = 0;
+    }, 400);
+
+    if (state.clickCount === 3) {
+      onTripleClick();
+      state.clickCount = 0;
+    }
   }
 
   function onSingleClick() {
@@ -626,6 +687,54 @@
     spawnInteractionParticles();
     // 双倍粒子
     setTimeout(() => spawnInteractionParticles(), 150);
+  }
+
+  function onTripleClick() {
+    const model = PRESET_MODELS[currentModelId];
+    const msg = model?.tripleClickMessage || '哇啊啊！别一直点啦… 😵💫';
+    showBubble(msg);
+    spawnInteractionParticles();
+
+    // 连续跳跃动画
+    state.element.classList.add('jump');
+    setTimeout(() => state.element.classList.remove('jump'), 500);
+    setTimeout(() => {
+      state.element.classList.add('jump');
+      spawnInteractionParticles();
+      setTimeout(() => state.element.classList.remove('jump'), 500);
+    }, 600);
+
+    // 星形粒子爆发
+    setTimeout(() => spawnStarBurst(), 200);
+    setTimeout(() => spawnStarBurst(), 400);
+  }
+
+  function onLongPress() {
+    // 睡觉/打盹
+    showBubble('💤 呼呼大睡中…');
+    state.element.classList.add('sleep');
+
+    // 释放粒子（zzz 符号）
+    const petInner = state.containerEl?.querySelector('#capylulu-pet-inner');
+    if (petInner) {
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          const z = document.createElement('span');
+          z.className = 'capylulu-particle';
+          z.textContent = '💤';
+          z.style.left = (30 + Math.random() * 40) + '%';
+          z.style.top = '20px';
+          z.style.fontSize = '18px';
+          petInner.appendChild(z);
+          setTimeout(() => z.remove(), 1500);
+        }, 300 * i);
+      }
+    }
+
+    setTimeout(() => {
+      state.element.classList.remove('sleep');
+      if (!state.isTyping) startIdleAnimation();
+    }, 2000);
   }
 
   function showBubble(text) {
@@ -835,7 +944,89 @@
     }
   });
 
-  // ============ 初始化 ============
+  // ============ 鼠标速度检测 ============
+  function setupMouseSpeedTracking() {
+    let speedTimer = null;
+
+    document.addEventListener('mousemove', (e) => {
+      const dx = e.clientX - state.lastMouseX;
+      const dy = e.clientY - state.lastMouseY;
+      const speed = Math.sqrt(dx * dx + dy * dy);
+      state.mouseSpeed = Math.min(speed, 500); // 上限 500px
+      state.lastMouseX = e.clientX;
+      state.lastMouseY = e.clientY;
+
+      // 清除之前的减速定时器
+      if (speedTimer) clearTimeout(speedTimer);
+
+      // 快速移动时触发恐慌状态
+      if (state.mouseSpeed > 80 && !state.isPanicked) {
+        setPanicked(true);
+      } else if (state.mouseSpeed < 20 && state.isPanicked) {
+        setPanicked(false);
+      }
+
+      // 200ms 无移动则恢复常态
+      speedTimer = setTimeout(() => {
+        setPanicked(false);
+      }, 300);
+    }, { passive: true });
+  }
+
+  function setPanicked(panicked) {
+    state.isPanicked = panicked;
+    if (state.element) {
+      state.element.classList.toggle('panicked', panicked);
+      if (panicked) {
+        showBubble('啊啊啊怎么跑得这么快！！😱💨');
+      }
+    }
+  }
+
+  // ============ 时间段状态 ============
+  function updateTimeStatus() {
+    const hour = new Date().getHours();
+    const el = state.element;
+    if (!el) return;
+
+    let newState = 'day';
+    let title = '☀️';
+
+    if (hour >= 5 && hour < 8) {
+      newState = 'dawn';
+      title = '🌅 早上好！';
+    } else if (hour >= 8 && hour < 12) {
+      newState = 'morning';
+      title = '☀️ 早上好！';
+    } else if (hour >= 12 && hour < 14) {
+      newState = 'noon';
+      title = '🌞 午饭时间！';
+    } else if (hour >= 14 && hour < 18) {
+      newState = 'afternoon';
+      title = '🌤️ 下午好~';
+    } else if (hour >= 18 && hour < 22) {
+      newState = 'evening';
+      title = '🌙 晚上好~';
+    } else if (hour >= 22 && hour < 24) {
+      newState = 'night';
+      title = '🌙 夜深了，注意休息哦~';
+    } else {
+      newState = 'late';
+      title = '😴 都凌晨了还不睡？快睡觉！';
+    }
+
+    if (newState !== state.timeState) {
+      state.timeState = newState;
+      el.title = title;
+
+      // 深夜或晚上时显示提示气泡
+      if (newState === 'late' || newState === 'night') {
+        if (newState === 'late') {
+          showBubble('😴 都凌晨了还不睡？快睡觉！');
+        }
+      }
+    }
+  }
   async function init() {
     // 避免重复注入
     if (document.getElementById('capylulu-pet-container')) return;
@@ -845,6 +1036,9 @@
 
     createPetElement();
     setupTypingDetection();
+    setupMouseSpeedTracking();
+    updateTimeStatus();
+    window.setInterval(updateTimeStatus, 60000);
     window.addEventListener('resize', handleResize);
 
     // 启动待机动画
