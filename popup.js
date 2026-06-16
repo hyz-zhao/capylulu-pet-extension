@@ -5,6 +5,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   // ============ DOM 元素引用 ============
   const elWalkOnType = document.getElementById('optWalkOnType');
+  const elPositionLocked = document.getElementById('optPositionLocked');
   const elMoveMode = document.getElementById('optMoveMode');
   const elSpeed = document.getElementById('optSpeed');
   const elSpeedValue = document.getElementById('speedValue');
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============ 默认设置 ============
   const DEFAULTS = {
     walkOnType: true,
+    positionLocked: false,
     moveMode: 'freeRoam',
     speed: 3,
     delay: 800,
@@ -385,6 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const data = await chrome.storage.local.get({
         walkOnType: DEFAULTS.walkOnType,
+        positionLocked: DEFAULTS.positionLocked,
         moveMode: DEFAULTS.moveMode,
         speed: DEFAULTS.speed,
         delay: DEFAULTS.delay,
@@ -393,6 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       elWalkOnType.checked = data.walkOnType;
+      elPositionLocked.checked = data.positionLocked;
       elMoveMode.value = data.moveMode;
       elSpeed.value = data.speed;
       elSpeedValue.textContent = data.speed;
@@ -411,6 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function saveSettings() {
     const settings = {
       walkOnType: elWalkOnType.checked,
+      positionLocked: elPositionLocked.checked,
       moveMode: elMoveMode.value,
       speed: parseInt(elSpeed.value, 10),
       delay: parseInt(elDelay.value, 10),
@@ -444,6 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============ 重置设置 ============
   async function resetSettings() {
     elWalkOnType.checked = DEFAULTS.walkOnType;
+    elPositionLocked.checked = DEFAULTS.positionLocked;
     elMoveMode.value = DEFAULTS.moveMode;
     elSpeed.value = DEFAULTS.speed;
     elSpeedValue.textContent = DEFAULTS.speed;
@@ -459,6 +465,14 @@ document.addEventListener('DOMContentLoaded', () => {
     renderPetPreview();
 
     await saveSettings();
+
+    // 清除保存的位置
+    try {
+      await chrome.storage.local.remove('petPosition');
+    } catch (err) {
+      // ignore
+    }
+
     showStatus('↺ 已重置为默认设置', 'info');
   }
 

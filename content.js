@@ -11,6 +11,7 @@
   const CONFIG = {
     petSize: 80,
     walkOnType: true,
+    positionLocked: false,
     moveMode: 'freeRoam',  // 'freeRoam' | 'horizontal' | 'stationary'
     walkSpeed: 3,          // px per frame
     walkFrameInterval: 30, // ms between animation frames
@@ -180,21 +181,26 @@
       state.bubbleEl.classList.add('bubble-' + currentModel.bubbleStyle);
     }
 
-    // 初始位置（右下角）
-    requestAnimationFrame(() => {
+    // 初始位置（优先恢复上次位置）
+    requestAnimationFrame(async () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       state.walkRange.maxX = Math.max(vw - CONFIG.petSize - 10, 100);
       state.walkRange.minX = 10;
       state.walkRange.maxY = Math.max(vh - CONFIG.petSize - 10, 100);
       state.walkRange.minY = 10;
-      state.positionX = state.walkRange.maxX; // 从右下角开始
-      state.positionY = state.walkRange.maxY;
+
+      const restored = await restorePosition();
+      if (!restored) {
+        state.positionX = state.walkRange.maxX;
+        state.positionY = state.walkRange.maxY;
+      }
       applyPosition();
     });
 
     setupDragInteraction();
     setupClickInteraction();
+    updateLockIndicator();
   }
 
   // ============ 打字检测 ============
@@ -500,6 +506,9 @@
     if (!state.isDragging) return;
     e.preventDefault();
 
+    // 位置锁定时禁止拖拽
+    if (CONFIG.positionLocked) return;
+
     const pos = getEventPos(e);
     let newX = pos.x - state.dragOffsetX;
     let newY = pos.y - state.dragOffsetY;
@@ -522,6 +531,9 @@
     state.isDragging = false;
     state.element.classList.remove('dragging');
 
+    // 保存拖拽后的位置
+    savePosition();
+
     // 如果正在打字，恢复行走
     if (state.isTyping) {
       startWalking();
@@ -535,6 +547,34 @@
       return { x: e.touches[0].clientX, y: e.touches[0].clientY };
     }
     return { x: e.clientX, y: e.clientY };
+  }
+
+  // ============ 位置记忆 ============
+  async function savePosition() {
+    try {
+      await chrome.storage.local.set({
+        petPosition: {
+          x: Math.round(state.positionX),
+          y: Math.round(state.positionY),
+        }
+      });
+    } catch (err) {
+      console.warn('[CAPYLULU] 保存位置失败:', err);
+    }
+  }
+
+  async function restorePosition() {
+    try {
+      const data = await chrome.storage.local.get('petPosition');
+      if (data.petPosition && data.petPosition.x !== undefined && data.petPosition.y !== undefined) {
+        state.positionX = data.petPosition.x;
+        state.positionY = data.petPosition.y;
+        return true;
+      }
+    } catch (err) {
+      console.warn('[CAPYLULU] 恢复位置失败:', err);
+    }
+    return false;
   }
 
   // ============ 点击互动 ============
@@ -640,6 +680,7 @@
       const data = await chrome.storage.local.get({
         moveMode: CONFIG.moveMode,
         walkOnType: CONFIG.walkOnType,
+        positionLocked: CONFIG.positionLocked,
         speed: CONFIG.walkSpeed,
         delay: CONFIG.typingStopDelay,
         size: CONFIG.petSize,
@@ -647,6 +688,7 @@
       });
       CONFIG.moveMode = data.moveMode;
       CONFIG.walkOnType = data.walkOnType;
+      CONFIG.positionLocked = data.positionLocked;
       CONFIG.walkSpeed = data.speed;
       CONFIG.typingStopDelay = data.delay;
       CONFIG.petSize = data.size;
@@ -659,10 +701,25 @@
 
   function applySettings(settings) {
     if (settings.walkOnType !== undefined) CONFIG.walkOnType = settings.walkOnType;
+    if (settings.positionLocked !== undefined) {
+      CONFIG.positionLocked = settings.positionLocked;
+      updateLockIndicator();
+    }
     if (settings.moveMode !== undefined) CONFIG.moveMode = settings.moveMode;
     if (settings.speed !== undefined) CONFIG.walkSpeed = settings.speed;
     if (settings.delay !== undefined) CONFIG.typingStopDelay = settings.delay;
     if (settings.size !== undefined) CONFIG.petSize = settings.size;
+  }
+
+  function updateLockIndicator() {
+    if (!state.element) return;
+    if (CONFIG.positionLocked) {
+      state.element.classList.add('container-locked');
+      state.element.title = '🔒 位置已锁定';
+    } else {
+      state.element.classList.remove('container-locked');
+      state.element.title = '';
+    }
   }
 
   // ============ 根据 viewBox 调整容器大小 ============

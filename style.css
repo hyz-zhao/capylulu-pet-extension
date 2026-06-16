@@ -28,6 +28,10 @@
   cursor: grabbing;
 }
 
+#capylulu-pet.container-locked {
+  cursor: not-allowed;
+}
+
 #capylulu-pet-inner {
   width: 100%;
   height: 100%;
