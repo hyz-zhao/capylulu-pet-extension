@@ -160,6 +160,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ============ SVG 安全处理 ============
+  function sanitizeSvg(svgString) {
+    // 移除 <script> 标签及其内容
+    let sanitized = svgString.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    // 移除 <foreignObject> 标签及其内容
+    sanitized = sanitized.replace(/<foreignObject\b[^<]*(?:(?!<\/foreignObject>)<[^<]*)*<\/foreignObject>/gi, '');
+    // 移除所有事件属性 (on*=...)
+    sanitized = sanitized.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+    // 移除 <a> 标签（防止外部链接）
+    sanitized = sanitized.replace(/<\/?a\b[^>]*>/gi, (match) => {
+      // 如果是闭合标签直接移除，如果是开放标签替换为 <g>
+      if (match.endsWith('/>') || match.endsWith('>')) {
+        return match.startsWith('</') ? '' : '<g>';
+      }
+      return match;
+    });
+    // 移除 data: URI
+    sanitized = sanitized.replace(/href\s*=\s*"data:/gi, 'href="#"');
+    sanitized = sanitized.replace(/href\s*=\s*'data:/gi, "href='#'");
+    return sanitized;
+  }
+
   // ============ 处理 SVG 上传 ============
   function setupUploadHandler() {
     if (!uploadCard || !svgUpload) return;
@@ -205,7 +227,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 提取 <svg> 内部内容（去掉外层 svg 标签）
         const innerMatch = svgText.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
-        const innerContent = innerMatch ? innerMatch[1] : svgText;
+        let innerContent = innerMatch ? innerMatch[1] : svgText;
+
+        // 安全 sanitization
+        innerContent = sanitizeSvg(innerContent);
 
         // 包裹为统一 100x100 视口，preserveAspectRatio 自动缩放居中
         const normalizedSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">${innerContent}</svg>`;
@@ -214,37 +239,76 @@ document.addEventListener('DOMContentLoaded', () => {
         const customId = 'custom_' + Date.now();
         const customName = file.name.replace('.svg', '');
 
-        // 保存自定义模型
-        await chrome.storage.local.set({
-          [`customModel_${customId}`]: {
-            id: customId,
-            name: customName,
-            viewBox: '0 0 100 100',
-            svg: normalizedSvg,
-          }
-        });
-
-        // 添加到预设模型列表（临时）
-        PRESET_MODELS[customId] = {
-          id: customId,
-          name: customName,
-          viewBox: '0 0 100 100',
-          svg: normalizedSvg,
-        };
-
-        // 切换到新模型
-        await selectModel(customId);
-
-        // 重新渲染网格
-        renderModelGrid();
-
-        showStatus(`✅ 已上传并切换到 ${customName}`, 'success');
+        // 显示上传预览确认框
+        showUploadConfirm(customName, normalizedSvg, customId);
       } catch (err) {
         showStatus('❌ 上传失败: ' + err.message, 'error');
       }
 
       // 清空 input
       svgUpload.value = '';
+    });
+  }
+
+  // ============ 显示上传预览确认框 ============
+  function showUploadConfirm(modelName, svgContent, modelId) {
+    // 创建遮罩层
+    const overlay = document.createElement('div');
+    overlay.className = 'upload-confirm-overlay';
+    overlay.innerHTML = `
+      <div class="upload-confirm-box">
+        <h3>上传确认</h3>
+        <p class="upload-confirm-name">${modelName}</p>
+        <div class="upload-confirm-preview">${svgContent}</div>
+        <p class="upload-confirm-hint">请确认预览显示正确后再确认</p>
+        <div class="upload-confirm-actions">
+          <button class="upload-confirm-btn upload-confirm-btn-cancel">取消</button>
+          <button class="upload-confirm-btn upload-confirm-btn-confirm">确认上传</button>
+        </div>
+      </div>
+    `;
+
+    // 阻止点击遮罩关闭
+    overlay.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    document.body.appendChild(overlay);
+
+    // 取消按钮
+    overlay.querySelector('.upload-confirm-btn-cancel').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      showStatus('已取消上传', 'info');
+    });
+
+    // 确认按钮
+    overlay.querySelector('.upload-confirm-btn-confirm').addEventListener('click', async () => {
+      // 保存自定义模型
+      await chrome.storage.local.set({
+        [`customModel_${modelId}`]: {
+          id: modelId,
+          name: modelName,
+          viewBox: '0 0 100 100',
+          svg: svgContent,
+        }
+      });
+
+      // 添加到预设模型列表（临时）
+      PRESET_MODELS[modelId] = {
+        id: modelId,
+        name: modelName,
+        viewBox: '0 0 100 100',
+        svg: svgContent,
+      };
+
+      // 切换到新模型
+      await selectModel(modelId);
+
+      // 重新渲染网格
+      renderModelGrid();
+
+      document.body.removeChild(overlay);
+      showStatus(`✅ 已上传并切换到 ${modelName}`, 'success');
     });
   }
 

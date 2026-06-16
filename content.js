@@ -715,6 +715,20 @@
     console.log('[CAPYLULU] 容器大小已调整:', containerWidth, 'x', containerHeight);
   }
 
+  // ============ SVG 安全处理 ============
+  function sanitizeSvg(svgString) {
+    let sanitized = svgString.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    sanitized = sanitized.replace(/<foreignObject\b[^<]*(?:(?!<\/foreignObject>)<[^<]*)*<\/foreignObject>/gi, '');
+    sanitized = sanitized.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+    sanitized = sanitized.replace(/<\/?a\b[^>]*>/gi, (match) => {
+      if (match.startsWith('</')) return '';
+      return '<g>';
+    });
+    sanitized = sanitized.replace(/href\s*=\s*"data:/gi, 'href="#"');
+    sanitized = sanitized.replace(/href\s*=\s*'data:/gi, "href='#'");
+    return sanitized;
+  }
+
   // ============ 切换模型 ============
   function switchModel(modelId) {
     const model = PRESET_MODELS[modelId];
@@ -727,7 +741,7 @@
     if (state.containerEl) state.containerEl.dataset.model = modelId;
     const petInner = state.containerEl?.querySelector('#capylulu-pet-inner');
     if (petInner) {
-      petInner.innerHTML = model.svg;
+      petInner.innerHTML = sanitizeSvg(model.svg);
     }
 
     // 根据模型 viewBox 调整容器大小

@@ -360,6 +360,111 @@
       border-top: 1px solid #E5D590;
       margin-top: 8px;
     }
+
+    /* 上传确认框 */
+    .upload-confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .upload-confirm-box {
+      background: #FFF9E6;
+      border-radius: 14px;
+      padding: 20px;
+      width: 260px;
+      border: 2px solid #E5D590;
+      text-align: center;
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .upload-confirm-box h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #7A6020;
+      margin-bottom: 10px;
+    }
+
+    .upload-confirm-name {
+      font-size: 12px;
+      color: #AA9040;
+      margin-bottom: 12px;
+      word-break: break-all;
+    }
+
+    .upload-confirm-preview {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 12px;
+      background: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #E5D590;
+    }
+
+    .upload-confirm-preview svg {
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .upload-confirm-hint {
+      font-size: 11px;
+      color: #AA9040;
+      margin-bottom: 14px;
+    }
+
+    .upload-confirm-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .upload-confirm-btn {
+      flex: 1;
+      padding: 8px 0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 2px solid #E5D590;
+      transition: all 0.2s;
+    }
+
+    .upload-confirm-btn-cancel {
+      background: white;
+      color: #8A7030;
+    }
+
+    .upload-confirm-btn-cancel:hover {
+      background: #FFFEF5;
+      border-color: #FFD93D;
+    }
+
+    .upload-confirm-btn-confirm {
+      background: linear-gradient(135deg, #FFD93D, #FFC107);
+      color: #6A4010;
+      border-color: #FFC107;
+    }
+
+    .upload-confirm-btn-confirm:hover {
+      box-shadow: 0 2px 8px rgba(255, 193, 7, 0.35);
+    }
   </style>
 </head>
 <body>
