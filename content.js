@@ -18,6 +18,7 @@
     typingStopDelay: 800,  // ms after last keystroke to stop walking
     bounceHeight: 6,       // walking bounce amplitude
     bounceSpeed: 180,      // ms per bounce cycle
+    runSpeedThreshold: 5,  // speed >= this triggers running
     defaultPosition: { right: 20, bottom: 20 },
     idleAnimations: ['blink', 'sway', 'float'],
     idleSwitchInterval: 3000,
@@ -63,6 +64,8 @@
     lastMouseY: 0,
     mouseSpeed: 0,
     isPanicked: false,
+    // 表情
+    currentExpression: 'normal', // 'normal' | 'happy' | 'surprised' | 'shy' | 'sleepy' | 'running'
     // 时间状态
     timeState: 'day', // 'day' | 'evening' | 'night' | 'late'
     timeIconTimer: null,
@@ -294,6 +297,14 @@
     state.lastDirectionChange = performance.now();
     state.directionChangeInterval = 2000 + Math.random() * 2000;
 
+    // 根据速度决定走路还是跑步
+    const isRunning = CONFIG.walkSpeed >= CONFIG.runSpeedThreshold;
+    if (isRunning) {
+      state.element.classList.add('running');
+      state.element.classList.remove('walking');
+      setExpression('running', 'running');
+    }
+
     let lastTime = performance.now();
 
     function walkFrame(now) {
@@ -356,8 +367,13 @@
 
       // 偶尔产生粒子
       state.frameCount++;
-      if (state.frameCount % 12 === 0) {
+      const particleInterval = isRunning ? 4 : 12;
+      if (state.frameCount % particleInterval === 0) {
         spawnStepParticle();
+        // 跑步时额外汗水粒子
+        if (isRunning && state.frameCount % 8 === 0) {
+          spawnSweatParticle();
+        }
       }
 
       state.walkAnimationId = requestAnimationFrame(walkFrame);
@@ -372,8 +388,9 @@
       cancelAnimationFrame(state.walkAnimationId);
       state.walkAnimationId = null;
     }
-    state.element.classList.remove('walking');
+    state.element.classList.remove('walking', 'running');
     state.element.classList.add('idle');
+    setExpression('normal', '');
     startIdleAnimation();
   }
 
@@ -495,6 +512,23 @@
       particleContainer.appendChild(particle);
       setTimeout(() => particle.remove(), 1200);
     }
+  }
+
+  // ============ 跑步汗水粒子 ============
+  function spawnSweatParticle() {
+    const particleContainer = state.containerEl?.querySelector('#capylulu-particles');
+    if (!particleContainer) return;
+
+    const sweat = document.createElement('span');
+    sweat.className = 'capylulu-particle';
+    sweat.textContent = '💦';
+    sweat.style.left = (state.direction > 0 ? '10px' : 'auto');
+    sweat.style.right = (state.direction < 0 ? '10px' : 'auto');
+    sweat.style.top = '25px';
+    sweat.style.fontSize = '12px';
+
+    particleContainer.appendChild(sweat);
+    setTimeout(() => sweat.remove(), 1200);
   }
 
   // ============ 拖拽交互 ============
@@ -621,23 +655,28 @@
     if (!el) return;
 
     el.addEventListener('mousedown', onPointerDown);
-    el.addEventListener('touchstart', onPointerDown, { passive: true });
     el.addEventListener('mouseup', onPointerUp);
-    el.addEventListener('touchend', onPointerUp);
+
+    // 使用 mousedown/mouseup 做点击计数，而不是 click
+    // 避免 content script 中 click 事件调度不一致
     el.addEventListener('click', onClick);
   }
 
   function onPointerDown(e) {
     if (e.button !== undefined && e.button !== 0) return;
     state.longPressFired = false;
+    clearTimeout(state.longPressTimer);
     state.longPressTimer = setTimeout(() => {
       state.longPressFired = true;
       onLongPress();
+      // 长按触发后清除 timer，防止 onPointerUp 误清
+      state.longPressTimer = null;
     }, CONFIG.longPressThreshold);
   }
 
   function onPointerUp(e) {
-    if (state.longPressTimer) {
+    // 如果长按还没触发且 timer 还在，说明是短按松开，清除 timer
+    if (state.longPressTimer && !state.longPressFired) {
       clearTimeout(state.longPressTimer);
       state.longPressTimer = null;
     }
@@ -672,15 +711,26 @@
     showBubble(msg);
     spawnInteractionParticles();
 
-    // 跳跃动画
+    // 短暂开心表情 + 跳跃动画
+    if (!state.isWalking && !state.isPanicked) {
+      setExpression('happy', 'happy');
+      setTimeout(() => setExpression('normal', ''), 500);
+    }
     state.element.classList.add('jump');
     setTimeout(() => state.element.classList.remove('jump'), 500);
   }
 
   function onDoubleClick() {
-    // 双击：旋转特效
+    // 双击：旋转特效 + 惊讶
     state.element.classList.add('spin');
     setTimeout(() => state.element.classList.remove('spin'), 600);
+
+    // 惊讶表情
+    if (!state.isWalking && !state.isPanicked) {
+      setExpression('surprised', 'surprised');
+      setTimeout(() => setExpression('normal', ''), 600);
+    }
+
     const model = PRESET_MODELS[currentModelId];
     const dblClickMsg = model?.doubleClickMessage || PRESET_MODELS.capylulu.doubleClickMessage;
     showBubble(dblClickMsg);
@@ -713,6 +763,7 @@
     // 睡觉/打盹
     showBubble('💤 呼呼大睡中…');
     state.element.classList.add('sleep');
+    setExpression('sleepy', 'sleepy');
 
     // 释放粒子（zzz 符号）
     const petInner = state.containerEl?.querySelector('#capylulu-pet-inner');
@@ -977,13 +1028,32 @@
     state.isPanicked = panicked;
     if (state.element) {
       state.element.classList.toggle('panicked', panicked);
+      if (panicked && !state.isWalking) {
+        setExpression('surprised', 'surprised');
+      } else if (!panicked && !state.isWalking) {
+        setExpression('normal', '');
+      }
       if (panicked) {
         showBubble('啊啊啊怎么跑得这么快！！😱💨');
       }
     }
   }
 
-  // ============ 时间段状态 ============
+  // ============ 表情系统 ============
+  function setExpression(expr, className) {
+    if (state.currentExpression === expr) return;
+    state.currentExpression = expr;
+    if (!state.element) return;
+
+    // 移除所有表情 class
+    state.element.classList.remove('happy', 'surprised', 'shy', 'sleepy', 'running');
+    // 添加新表情
+    if (className) {
+      state.element.classList.add(className);
+    }
+  }
+
+  // ============ 时间状态 ============
   function updateTimeStatus() {
     const hour = new Date().getHours();
     const el = state.element;
@@ -1019,11 +1089,18 @@
       state.timeState = newState;
       el.title = title;
 
-      // 深夜或晚上时显示提示气泡
+      // 深夜或晚上时显示提示 + 困倦表情
       if (newState === 'late' || newState === 'night') {
         if (newState === 'late') {
           showBubble('😴 都凌晨了还不睡？快睡觉！');
         }
+        // 晚上/深夜时如果处于待机状态，显示困倦表情
+        if (!state.isWalking && !state.isPanicked) {
+          setExpression('sleepy', 'sleepy');
+        }
+      } else if (!state.isWalking && !state.isPanicked) {
+        // 其他时间段恢复常态
+        setExpression('normal', '');
       }
     }
   }

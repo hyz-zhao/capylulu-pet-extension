@@ -47,10 +47,13 @@
 }
 
 /* ============ 行走状态 ============ */
+
+/* 行走时 SVG 整体微弹 */
 #capylulu-pet.walking #capylulu-pet-inner svg {
   animation: petWalkBounce 0.18s ease-in-out infinite alternate;
 }
 
+/* 行走时四肢摆动 */
 #capylulu-pet.walking .pet-left-arm {
   transform-origin: 12px 55px;
   animation: armSwingLeft 0.18s ease-in-out infinite alternate;
@@ -69,6 +72,54 @@
 #capylulu-pet.walking .pet-right-leg {
   transform-origin: 65px 85px;
   animation: legSwingRight 0.18s ease-in-out infinite alternate;
+}
+
+/* ============ 跑步状态 ============ */
+#capylulu-pet.running #capylulu-pet-inner svg {
+  animation: petRunBounce 0.1s ease-in-out infinite alternate;
+  transform: rotate(10deg) scaleX(1.05);
+}
+
+#capylulu-pet.running .pet-left-arm {
+  transform-origin: 12px 55px;
+  animation: armSwingLeftRun 0.1s ease-in-out infinite alternate;
+}
+
+#capylulu-pet.running .pet-right-arm {
+  transform-origin: 88px 55px;
+  animation: armSwingRightRun 0.1s ease-in-out infinite alternate;
+}
+
+#capylulu-pet.running .pet-left-leg {
+  transform-origin: 35px 85px;
+  animation: legSwingLeftRun 0.1s ease-in-out infinite alternate;
+}
+
+#capylulu-pet.running .pet-right-leg {
+  transform-origin: 65px 85px;
+  animation: legSwingRightRun 0.1s ease-in-out infinite alternate;
+}
+
+/* 跑步表情 */
+#capylulu-pet.running .pet-eyes {
+  animation: runEyeAnim 0.1s ease-in-out infinite alternate;
+}
+
+#capylulu-pet.running .pet-mouth {
+  stroke-width: 2;
+  d: path("M 42 60 Q 50 70 58 60");
+}
+
+#capylulu-pet.running .pet-eyes .eye-highlight {
+  r: 3.5;
+}
+
+/* 跑步汗水粒子容器 */
+#capylulu-pet-container .sweat-drops {
+  position: absolute;
+  top: -5px;
+  right: -10px;
+  pointer-events: none;
 }
 
 /* ============ 待机状态 ============ */
@@ -318,6 +369,110 @@
 @keyframes panicShake {
   0% { transform: translateX(-3px) rotate(-3deg); }
   100% { transform: translateX(3px) rotate(3deg); }
+}
+
+/* 跑步弹跳 */
+@keyframes petRunBounce {
+  0%   { transform: translateY(0) scaleY(1) scaleX(1); }
+  100% { transform: translateY(-12px) scaleY(0.92) scaleX(1.05); }
+}
+
+/* 跑步手臂摆动 */
+@keyframes armSwingLeftRun {
+  0%   { transform: rotate(-45deg); }
+  100% { transform: rotate(45deg); }
+}
+@keyframes armSwingRightRun {
+  0%   { transform: rotate(45deg); }
+  100% { transform: rotate(-45deg); }
+}
+
+/* 跑步腿部摆动 */
+@keyframes legSwingLeftRun {
+  0%   { transform: rotate(-22deg); }
+  100% { transform: rotate(22deg); }
+}
+@keyframes legSwingRightRun {
+  0%   { transform: rotate(22deg); }
+  100% { transform: rotate(-22deg); }
+}
+
+/* 跑步眼睛：微睁 */
+@keyframes runEyeAnim {
+  0%   { transform: scaleY(1); }
+  100% { transform: scaleY(1.2); }
+}
+
+/* ============ 表情系统 ============ */
+
+/* 开心表情：眼睛眯成 ^ ^ */
+#capylulu-pet.happy .pet-eyes {
+  animation: happyEyeAnim 2s ease-in-out infinite;
+}
+
+@keyframes happyEyeAnim {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(0.5); }
+}
+
+/* 开心嘴巴：加深弧度 */
+#capylulu-pet.happy .pet-mouth {
+  d: path("M 40 60 Q 50 74 60 60");
+  stroke-width: 3;
+}
+
+/* 惊讶：眼睛放大 */
+#capylulu-pet.surprised .pet-eyes {
+  transform: scaleY(1.5) scaleX(1.3);
+}
+
+#capylulu-pet.surprised .pet-eyes .eye-highlight {
+  r: 4;
+}
+
+/* 惊讶嘴巴：变成 o */
+#capylulu-pet.surprised .pet-mouth {
+  d: path("M 47 63 Q 47 68 50 68 Q 53 68 53 63 Q 53 58 50 58 Q 47 58 47 63");
+  stroke-width: 2;
+}
+
+/* 害羞：腮红加深 + 眼睛 ω 形 */
+#capylulu-pet.shy .pet-eyes {
+  transform: scaleY(0.4);
+}
+
+#capylulu-pet.shy .cheekGrad-stop1 {
+  stop-color: #FF6B80;
+}
+
+@keyframes shyCheekPulse {
+  0%, 100% { transform: scaleX(1); opacity: 0.7; }
+  50% { transform: scaleX(1.3); opacity: 1; }
+}
+
+#capylulu-pet.shy ellipse[fill="url(#cheekGrad)"] {
+  animation: shyCheekPulse 2s ease-in-out infinite;
+}
+
+/* 深夜：半闭眼 */
+#capylulu-pet.sleepy .pet-eyes {
+  transform: scaleY(0.3);
+}
+
+#capylulu-pet.sleepy .pet-mouth {
+  d: path("M 45 63 Q 50 65 55 63");
+  stroke-width: 1.5;
+}
+
+/* 奔跑：嘴巴张开 */
+#capylulu-pet.running .pet-mouth {
+  d: path("M 44 60 Q 50 72 56 60");
+  stroke-width: 2.5;
+}
+
+/* 奔跑眼睛 */
+#capylulu-pet.running .pet-eyes {
+  transform: scaleY(1.2);
 }
 
 /* ============ 响应式 & 安全 ============ */
