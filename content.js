@@ -724,30 +724,14 @@
 
   // ============ 根据 viewBox 调整容器大小 ============
   function adjustContainerSize(viewBox) {
-    if (!viewBox || !state.containerEl) return;
+    if (!state.containerEl) return;
 
-    // 解析 viewBox: "x y width height"
-    const parts = viewBox.split(/[\s,]+/).map(Number);
-    if (parts.length < 4) return;
-
-    const vbWidth = parts[2];
-    const vbHeight = parts[3];
-    const aspectRatio = vbWidth / vbHeight;
-
-    // 基础大小为 CONFIG.petSize，最小宽度为 60px
+    // 始终使用 CONFIG.petSize 作为容器的基础尺寸
+    // viewBox 可能非正方形（如 GANYU 的 40 0 140 220），
+    // 但 SVG 的 preserveAspectRatio="xMidYMid meet" 会自动居中适配
     const baseSize = CONFIG.petSize;
-    const minWidth = 60;
-    let containerWidth, containerHeight;
-
-    if (aspectRatio >= 1) {
-      // 宽度 >= 高度
-      containerWidth = baseSize;
-      containerHeight = baseSize / aspectRatio;
-    } else {
-      // 高度 > 宽度，确保宽度不会太小
-      containerHeight = baseSize;
-      containerWidth = Math.max(baseSize * aspectRatio, minWidth);
-    }
+    const containerWidth = baseSize;
+    const containerHeight = baseSize;
 
     // 应用到容器和内部元素
     const container = state.containerEl;
